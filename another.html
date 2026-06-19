@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png" />
+  <title>Frontend Mentor | Product list with cart</title>
+
+  <style>
+    :root{
+      --bg:#f7f8fd;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --card:#ffffff;
+      --border:#e5e7eb;
+      --brand:#b91c1c;
+      --brand-hover:#991b1b;
+      --success:#10b981;
+      --shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+
+    /* Loading skeleton */
+    @keyframes shimmer{
+      0%{background-position:-200% 0}
+      100%{background-position:200% 0}
+    }
+    .skeleton{
+      background:linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite;
+      border-radius:10px;
+    }
+
+    header{padding:24px 16px;max-width:1100px;margin:0 auto}
+    h1{font-size:24px;margin:0 0 8px;font-weight:800}
+    .subtitle{color:var(--muted);font-size:14px;margin:0}
+
+    .layout{display:grid;gap:24px;grid-template-columns:1fr;max-width:1100px;margin:0 auto;padding:0 16px 32px}
+    @media(min-width:900px){.layout{grid-template-columns:1.5fr 1fr}}
+
+    .section-title{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 16px;font-weight:700}
+
+    .products,.cart{background:transparent}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(1,minmax(0,1fr))}
+    @media(min-width:600px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(min-width:900px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+    .product{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0;overflow:hidden;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+    .product:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+    .product-img-wrap{position:relative;padding:16px 16px 0;display:flex;justify-content:center}
+    .product img{width:100%;height:180px;object-fit:cover;border-radius:12px;transition:transform .3s}
+    .product:hover img{transform:scale(1.02)}
+
+    .product-badge{
+      position:absolute;top:24px;right:24px;
+      background:var(--brand);color:#fff;font-size:11px;font-weight:800;
+      padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;
+      opacity:0;transform:translateY(-4px);transition:all .3s;
+    }
+    .product.in-cart .product-badge{opacity:1;transform:translateY(0)}
+
+    .product-info{padding:16px;flex:1;display:flex;flex-direction:column}
+    .product-name{font-weight:800;font-size:15px;margin:0 0 4px;line-height:1.3}
+    .product-category{color:var(--muted);font-size:12px;margin:0 0 8px;text-transform:capitalize}
+    .product-price{font-weight:800;font-size:16px;margin:0 0 14px;color:var(--brand)}
+    .product-footer{margin-top:auto}
+
+    .btn{cursor:pointer;border-radius:12px;border:1px solid var(--border);background:#fff;padding:10px 14px;font-weight:700;display:inline-flex;align-items:center;gap:8px;justify-content:center;user-select:none;transition:all .15s;font-size:13px}
+    .btn:hover:not(:disabled){background:#f9fafb;border-color:#d1d5db}
+    .btn:active:not(:disabled){transform:scale(0.98)}
+    .btn-primary{background:var(--brand);border-color:transparent;color:#fff}
+    .btn-primary:hover:not(:disabled){background:var(--brand-hover);box-shadow:var(--shadow)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn .icon{width:18px;height:18px}
+
+    .qty-inline{display:inline-flex;align-items:center;gap:6px;background:#f3f4f6;border-radius:10px;padding:4px}
+    .qty-inline .qty-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .qty-inline .qty-btn:hover:not(:disabled){background:var(--bg);border-color:#d1d5db}
+    .qty-inline .qty{min-width:24px;text-align:center;font-weight:800;font-size:13px}
+
+    .cart-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;position:sticky;top:20px;align-self:start;box-shadow:var(--shadow)}
+
+    .cart-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+    .cart-title{font-size:18px;font-weight:800;margin:0}
+    .cart-count{color:var(--muted);font-size:14px;font-weight:600}
+
+    .empty{display:none;text-align:center;padding:24px 8px;color:var(--muted)}
+    .empty svg{width:140px;height:auto;margin-bottom:12px;opacity:.6}
+    .empty strong{display:block;color:var(--text);margin-top:8px;font-size:14px}
+    .empty p{font-size:13px;margin:4px 0 0}
+
+    .cart-items{display:flex;flex-direction:column;gap:12px;max-height:400px;overflow-y:auto;padding-right:4px}
+    .cart-items::-webkit-scrollbar{width:4px}
+    .cart-items::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+
+    .cart-item{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;border-top:1px dashed var(--border);padding-top:12px;animation:slideIn .3s ease}
+    .cart-item:first-child{border-top:none;padding-top:0}
+    .cart-item img{width:52px;height:52px;object-fit:cover;border-radius:10px}
+    .cart-item-name{font-weight:800;font-size:14px;margin:0;line-height:1.3}
+    .cart-item-meta{font-size:12px;color:var(--muted);margin-top:3px}
+    .cart-item-total{font-weight:800;font-size:14px;text-align:right}
+
+    .qty-row{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+    .qty-btn{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .qty-btn:hover:not(:disabled){background:#f3f4f6;border-color:#d1d5db}
+    .qty-btn:active:not(:disabled){transform:scale(0.92)}
+    .qty{min-width:28px;text-align:center;font-weight:800;font-size:14px}
+    .remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-weight:800;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .remove-btn:hover{color:var(--brand);background:#fef2f2}
+
+    .totals{border-top:2px solid var(--border);margin-top:16px;padding-top:16px}
+    .totals-row{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+    .totals-row strong{font-size:20px;color:var(--text)}
+    .totals-row .muted{color:var(--muted);font-size:14px}
+
+    .order-btn{width:100%;margin-top:14px;border-radius:14px;padding:14px 16px;border:0;background:#111827;color:#fff;font-weight:800;cursor:pointer;font-size:15px;transition:all .2s;position:relative;overflow:hidden}
+    .order-btn:hover:not(:disabled){background:#000;box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+    .order-btn:active:not(:disabled){transform:translateY(0)}
+    .order-btn:disabled{opacity:.4;cursor:not-allowed}
+    .order-btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.3);transform:scale(0);animation:ripple .6s linear;pointer-events:none}
+    @keyframes ripple{to{transform:scale(4);opacity:0}}
+
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+    .toast{background:#111827;color:#fff;border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg);font-weight:600;font-size:14px;opacity:0;transform:translateY(20px);transition:all .4s cubic-bezier(.175,.885,.32,1.275);pointer-events:auto;max-width:320px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast.success{background:var(--success)}
+    .toast.error{background:#ef4444}
+    .toast-icon{width:20px;height:20px;flex-shrink:0}
+
+    @keyframes slideIn{
+      from{opacity:0;transform:translateX(-10px)}
+      to{opacity:1;transform:translateX(0)}
+    }
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .fade-in{animation:fadeIn .4s ease}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+    .modal-overlay.open{opacity:1;pointer-events:auto}
+    .modal{background:var(--card);border-radius:20px;padding:28px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg);transform:scale(.95);transition:transform .3s}
+    .modal-overlay.open .modal{transform:scale(1)}
+    .modal h2{margin:0 0 8px;font-size:20px}
+    .modal p{color:var(--muted);margin:0 0 20px;font-size:14px}
+    .modal-items{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+    .modal-item{display:flex;align-items:center;gap:12px;padding:10px;background:#f9fafb;border-radius:12px}
+    .modal-item img{width:48px;height:48px;object-fit:cover;border-radius:8px}
+    .modal-item-info{flex:1}
+    .modal-item-name{font-weight:700;font-size:14px;margin:0}
+    .modal-item-meta{font-size:12px;color:var(--muted);margin-top:2px}
+    .modal-item-total{font-weight:800}
+    .modal-total{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:2px solid var(--border);font-size:18px;font-weight:800}
+    .modal-actions{display:flex;gap:10px;margin-top:20px}
+    .modal-actions .btn{flex:1;padding:12px}
+    .modal-actions .btn-primary{flex:2}
+
+    /* Loading state */
+    .loading-grid .product{pointer-events:none}
+    .loading-grid .product-img-wrap .skeleton{width:100%;height:180px}
+    .loading-grid .product-info .skeleton{height:16px;margin-bottom:8px}
+    .loading-grid .product-info .skeleton:last-child{height:36px;margin-top:auto;width:60%}
+
+    /* Accessibility */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+
+    /* Focus styles */
+    button:focus-visible, .btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:10px}
+
+    /* Reduced motion */
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    }
+  </style>
+<base target="_blank">
+</head>
+<body>
+  <header>
+    <h1>Desserts</h1>
+    <p class="subtitle">Hand-picked sweet treats for every craving</p>
+  </header>
+
+  <main class="layout">
+    <section class="products">
+      <div class="section-title">Our Menu</div>
+      <div id="products" class="grid" aria-label="Product list" aria-live="polite"></div>
+    </section>
+
+    <aside class="cart">
+      <div class="cart-panel" aria-label="Shopping cart">
+        <div class="cart-header">
+          <h2 class="cart-title">Your Cart <span id="cartCount" class="cart-count">(0)</span></h2>
+          <button id="clearCartBtn" class="btn" type="button" style="display:none;font-size:12px;padding:6px 10px" aria-label="Clear all items">Clear all</button>
+        </div>
+
+        <div id="emptyState" class="empty">
+          <svg viewBox="0 0 200 180" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="40" y="60" width="120" height="100" rx="12" stroke="#e5e7eb" stroke-width="4"/>
+            <path d="M60 140 L80 120 L100 140 L120 110 L140 140" stroke="#e5e7eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="150" cy="50" r="20" stroke="#e5e7eb" stroke-width="4"/>
+            <path d="M140 50 L150 60 L165 40" stroke="#e5e7eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <strong>Your added items will appear here</strong>
+          <p>Add some delicious desserts to get started</p>
+        </div>
+
+        <div id="cartItems" class="cart-items" aria-label="Cart items"></div>
+
+        <div class="totals">
+          <div class="totals-row">
+            <span class="muted">Order Total</span>
+            <strong id="cartTotal">$0.00</strong>
+          </div>
+        </div>
+
+        <button id="checkoutBtn" class="order-btn" type="button" disabled>Confirm Order</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Confirmation Modal -->
+  <div id="modalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal">
+      <h2 id="modalTitle">Order Confirmed</h2>
+      <p>We hope you enjoy your desserts!</p>
+      <div id="modalItems" class="modal-items"></div>
+      <div class="modal-total">
+        <span>Order Total</span>
+        <span id="modalTotal">$0.00</span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" type="button" id="modalClose">Continue Shopping</button>
+        <button class="btn btn-primary" type="button" id="modalNewOrder">Start New Order</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Data & State ---
+    const state = {
+      items: new Map(),
+      products: [],
+      loading: true
+    };
+
+    const $products = document.getElementById('products');
+    const $cartItems = document.getElementById('cartItems');
+    const $emptyState = document.getElementById('emptyState');
+    const $cartCount = document.getElementById('cartCount');
+    const $cartTotal = document.getElementById('cartTotal');
+    const $checkoutBtn = document.getElementById('checkoutBtn');
+    const $clearCartBtn = document.getElementById('clearCartBtn');
+    const $toastContainer = document.getElementById('toastContainer');
+    const $modalOverlay = document.getElementById('modalOverlay');
+    const $modalItems = document.getElementById('modalItems');
+    const $modalTotal = document.getElementById('modalTotal');
+    const $modalClose = document.getElementById('modalClose');
+    const $modalNewOrder = document.getElementById('modalNewOrder');
+
+    // --- Helpers ---
+    function money(n) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    function totalQty() {
+      let q = 0;
+      for (const v of state.items.values()) q += v.qty;
+      return q;
+    }
+
+    function totalPrice() {
+      let t = 0;
+      for (const v of state.items.values()) t += v.price * v.qty;
+      return t;
+    }
+
+    function saveCart() {
+      try {
+        const data = Array.from(state.items.entries());
+        localStorage.setItem('cart', JSON.stringify(data));
+      } catch (e) { /* ignore */ }
+    }
+
+    function loadCart() {
+      try {
+        const raw = localStorage.getItem('cart');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        state.items = new Map(data);
+      } catch (e) { /* ignore */ }
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.setAttribute('role', 'status');
+
+      const icon = type === 'success' 
+        ? '<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+        : '<svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+
+      toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`;
+      $toastContainer.appendChild(toast);
+
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, 3000);
+    }
+
+    function createRipple(e, btn) {
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple';
+      const rect = btn.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    }
+
+    // --- Rendering ---
+    function setEmpty() {
+      const empty = state.items.size === 0;
+      $emptyState.style.display = empty ? 'block' : 'none';
+      $cartItems.style.display = empty ? 'none' : 'flex';
+      $checkoutBtn.disabled = empty;
+      $clearCartBtn.style.display = empty ? 'none' : 'inline-flex';
+    }
+
+    function render() {
+      const qty = totalQty();
+      $cartCount.textContent = `(${qty})`;
+      $cartTotal.textContent = money(totalPrice());
+      setEmpty();
+      saveCart();
+
+      $cartItems.innerHTML = '';
+      if (state.items.size === 0) return;
+
+      const fragment = document.createDocumentFragment();
+
+      for (const v of state.items.values()) {
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        const itemTotal = v.price * v.qty;
+
+        row.innerHTML = `
+          <img src="${escapeHtml(v.image.thumbnail)}" alt="${escapeHtml(v.name)}" loading="lazy" />
+          <div>
+            <p class="cart-item-name">${escapeHtml(v.name)}</p>
+            <div class="cart-item-meta">${money(v.price)} × ${v.qty} <strong style="color:var(--text)">${money(itemTotal)}</strong></div>
+          </div>
+          <div class="qty-row">
+            <button class="qty-btn" type="button" data-action="dec" aria-label="Decrease ${escapeHtml(v.name)} quantity" ${v.qty <= 1 ? 'aria-describedby="remove-hint"' : ''}>−</button>
+            <div class="qty" aria-label="Quantity">${v.qty}</div>
+            <button class="qty-btn" type="button" data-action="inc" aria-label="Increase ${escapeHtml(v.name)} quantity">+</button>
+            <button class="remove-btn" type="button" data-action="remove" aria-label="Remove ${escapeHtml(v.name)} from cart" title="Remove item">✕</button>
+          </div>
+        `;
+
+        row.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const action = btn.dataset.action;
+            if (action === 'inc') addQty(v.name, 1);
+            if (action === 'dec') addQty(v.name, -1);
+            if (action === 'remove') removeItem(v.name);
+          });
+        });
+
+        fragment.appendChild(row);
+      }
+
+      $cartItems.appendChild(fragment);
+    }
+
+    function renderProducts() {
+      $products.innerHTML = '';
+
+      if (state.loading) {
+        $products.classList.add('loading-grid');
+        for (let i = 0; i < 6; i++) {
+          const card = document.createElement('div');
+          card.className = 'product';
+          card.innerHTML = `
+            <div class="product-img-wrap"><div class="skeleton"></div></div>
+            <div class="product-info">
+              <div class="skeleton" style="width:40%"></div>
+              <div class="skeleton" style="width:70%"></div>
+              <div class="skeleton" style="width:30%"></div>
+              <div class="skeleton"></div>
+            </div>
+          `;
+          $products.appendChild(card);
+        }
+        return;
+      }
+
+      $products.classList.remove('loading-grid');
+      const fragment = document.createDocumentFragment();
+
+      for (const p of state.products) {
+        const inCart = state.items.has(p.name);
+        const qty = inCart ? state.items.get(p.name).qty : 0;
+
+        const card = document.createElement('div');
+        card.className = `product fade-in${inCart ? ' in-cart' : ''}`;
+        card.dataset.name = p.name;
+
+        card.innerHTML = `
+          <div class="product-img-wrap">
+            <img src="${escapeHtml(p.image.thumbnail)}" alt="${escapeHtml(p.name)}" loading="lazy" />
+            <span class="product-badge">In Cart</span>
+          </div>
+          <div class="product-info">
+            <div class="product-category">${escapeHtml(p.category)}</div>
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-price">${money(p.price)}</div>
+            <div class="product-footer">
+              ${inCart 
+                ? `<div class="qty-inline">
+                    <button class="qty-btn" type="button" data-action="dec" aria-label="Decrease quantity">−</button>
+                    <div class="qty">${qty}</div>
+                    <button class="qty-btn" type="button" data-action="inc" aria-label="Increase quantity">+</button>
+                   </div>`
+                : `<button class="btn btn-primary" type="button" data-add="${escapeHtml(p.name)}">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add to Cart
+                   </button>`
+              }
+            </div>
+          </div>
+        `;
+
+        const footer = card.querySelector('.product-footer');
+        if (inCart) {
+          footer.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const action = btn.dataset.action;
+              if (action === 'inc') addQty(p.name, 1);
+              if (action === 'dec') addQty(p.name, -1);
+            });
+          });
+        } else {
+          const btn = footer.querySelector('button');
+          btn.addEventListener('click', (e) => {
+            createRipple(e, btn);
+            addItem(p);
+            showToast(`${p.name} added to cart`);
+          });
+        }
+
+        fragment.appendChild(card);
+      }
+
+      $products.appendChild(fragment);
+    }
+
+    // --- Actions ---
+    function addItem(item) {
+      const key = item.name;
+      if (state.items.has(key)) {
+        state.items.get(key).qty += 1;
+      } else {
+        state.items.set(key, { ...item, qty: 1 });
+      }
+      renderProducts();
+      render();
+    }
+
+    function addQty(name, delta) {
+      const it = state.items.get(name);
+      if (!it) return;
+      it.qty += delta;
+      if (it.qty <= 0) {
+        state.items.delete(name);
+        showToast(`${name} removed from cart`, 'info');
+      }
+      renderProducts();
+      render();
+    }
+
+    function removeItem(name) {
+      state.items.delete(name);
+      showToast(`${name} removed from cart`, 'info');
+      renderProducts();
+      render();
+    }
+
+    function clearCart() {
+      if (!confirm('Clear all items from your cart?')) return;
+      state.items.clear();
+      renderProducts();
+      render();
+      showToast('Cart cleared', 'info');
+    }
+
+    function openModal() {
+      $modalItems.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+
+      for (const v of state.items.values()) {
+        const div = document.createElement('div');
+        div.className = 'modal-item';
+        div.innerHTML = `
+          <img src="${escapeHtml(v.image.thumbnail)}" alt="" />
+          <div class="modal-item-info">
+            <p class="modal-item-name">${escapeHtml(v.name)}</p>
+            <p class="modal-item-meta">${v.qty} × ${money(v.price)}</p>
+          </div>
+          <div class="modal-item-total">${money(v.price * v.qty)}</div>
+        `;
+        fragment.appendChild(div);
+      }
+
+      $modalItems.appendChild(fragment);
+      $modalTotal.textContent = money(totalPrice());
+      $modalOverlay.classList.add('open');
+      $modalOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      $modalClose.focus();
+    }
+
+    function closeModal() {
+      $modalOverlay.classList.remove('open');
+      $modalOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      $checkoutBtn.focus();
+    }
+
+    function confirmOrder() {
+      if (state.items.size === 0) return;
+      openModal();
+    }
+
+    function startNewOrder() {
+      state.items.clear();
+      renderProducts();
+      render();
+      closeModal();
+      showToast('Thank you for your order!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- Events ---
+    $checkoutBtn.addEventListener('click', (e) => {
+      createRipple(e, $checkoutBtn);
+      confirmOrder();
+    });
+
+    $clearCartBtn.addEventListener('click', clearCart);
+    $modalClose.addEventListener('click', closeModal);
+    $modalNewOrder.addEventListener('click', startNewOrder);
+
+    $modalOverlay.addEventListener('click', (e) => {
+      if (e.target === $modalOverlay) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $modalOverlay.classList.contains('open')) {
+        closeModal();
+      }
+    });
+
+    // --- Init ---
+    async function init() {
+      loadCart();
+      renderProducts();
+      render();
+
+      try {
+        const res = await fetch('./data.json');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        state.products = await res.json();
+        state.loading = false;
+        renderProducts();
+        render();
+      } catch (e) {
+        state.loading = false;
+        $products.innerHTML = `
+          <div style="grid-column:1/-1;text-align:center;padding:40px 20px">
+            <p style="color:#b91c1c;font-weight:700;margin:0 0 8px">Failed to load products</p>
+            <p style="color:var(--muted);margin:0 0 16px;font-size:14px">${escapeHtml(e.message)}</p>
+            <button class="btn btn-primary" onclick="location.reload()">Retry</button>
+          </div>
+        `;
+        showToast('Failed to load products', 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
